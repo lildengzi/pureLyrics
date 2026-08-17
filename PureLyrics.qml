@@ -76,10 +76,31 @@ DesktopPluginComponent {
             }
         }
 
-        // Fall back to currently playing player
-        for (let i = 0; i < pool.length; i++) {
-            if (pool[i] && pool[i].isPlaying) return pool[i];
+        // Browsers expose video/tab MPRIS which is not music — rank them last.
+        const browserHints = ["brave", "chromium", "chrome", "firefox", "zen", "browser", "electron", "edge", "vivaldi", "opera"];
+        function isBrowser(p) {
+            const ident = ((p.identity || "") + " " + (p.desktopEntry || "")).toLowerCase();
+            return browserHints.some(h => ident.includes(h));
         }
+
+        // 1. Playing non-browser player (actual music)
+        for (let i = 0; i < pool.length; i++) {
+            const p = pool[i];
+            if (p && p.isPlaying && !isBrowser(p)) return p;
+        }
+
+        // 2. Any non-browser player (music player, even if paused)
+        for (let i = 0; i < pool.length; i++) {
+            const p = pool[i];
+            if (p && !isBrowser(p)) return p;
+        }
+
+        // 3. Playing browser (video) — only if no music player exists
+        for (let i = 0; i < pool.length; i++) {
+            const p = pool[i];
+            if (p && p.isPlaying) return p;
+        }
+
         return pool[0] ?? null;
     }
 
@@ -177,11 +198,28 @@ DesktopPluginComponent {
     property int lyricStatus: lyricState.idle
     property int lyricSource: lyricSrc.none
 
-    // Track current song info
-    property string currentTitle: activePlayer?.trackTitle ?? ""
-    property string currentArtist: activePlayer?.trackArtist ?? ""
-    property string currentAlbum: activePlayer?.trackAlbum ?? ""
-    property real currentDuration: activePlayer?.length ?? 0
+    // ── Player lock ──
+    // Once lyrics are fetched from a player, we lock onto it so other MPRIS
+    // players (e.g. a browser playing a video) cannot hijack title/position.
+    property var _lockedPlayer: null
+
+    // The player whose lyrics we are actually showing.
+    readonly property var lyricPlayer: {
+        if (_lockedPlayer && root.playersList.includes(_lockedPlayer))
+            return _lockedPlayer;
+        return activePlayer;
+    }
+
+    function _releaseLockIfStopped() {
+        if (_lockedPlayer && _lockedPlayer.playbackState === MprisPlaybackState.Stopped)
+            _lockedPlayer = null;
+    }
+
+    // Track current song info (from the locked player to stay stable)
+    property string currentTitle: lyricPlayer?.trackTitle ?? ""
+    property string currentArtist: lyricPlayer?.trackArtist ?? ""
+    property string currentAlbum: lyricPlayer?.trackAlbum ?? ""
+    property real currentDuration: lyricPlayer?.length ?? 0
 
     // Current lyric line for bar pill display
     property string currentLyricText: {
@@ -198,7 +236,7 @@ DesktopPluginComponent {
 
     on_ConfigValidChanged: {
         console.info("[PureLyrics] Navidrome configured: " + (_configValid ? "yes (" + navidromeUrl + ")" : "no"));
-        if (activePlayer && currentTitle)
+        if (root.lyricPlayer && currentTitle)
             fetchDebounceTimer.restart();
     }
 
@@ -402,6 +440,9 @@ DesktopPluginComponent {
         var player = root.activePlayer;
         if (!player)
             return;
+
+        // Lock onto this player so browsers/video players can't hijack it.
+        root._lockedPlayer = player;
 
         if (!currentTitle)
             return;
@@ -1048,10 +1089,14 @@ DesktopPluginComponent {
     Timer {
         id: positionTimer
         interval: 100
-        running: activePlayer && lyricsLines.length > 0
+        running: root.lyricPlayer && lyricsLines.length > 0
         repeat: true
         onTriggered: {
-            var rawPos = activePlayer.position || 0;
+            root._releaseLockIfStopped();
+            var lp = root.lyricPlayer;
+            if (!lp)
+                return;
+            var rawPos = lp.position || 0;
             var pos = rawPos + root.scrollOffset / 1000.0;
             var newIndex = -1;
             for (var i = lyricsLines.length - 1; i >= 0; i--) {
@@ -1153,6 +1198,17 @@ DesktopPluginComponent {
     implicitHeight: root.fontSize * root.lineCount * 1.4 + 8
     minWidth: 120
     minHeight: 40
+
+    // Hide entirely when no active media is playing (fade out)
+    readonly property bool hasActiveMedia: {
+        const lp = root.lyricPlayer;
+        return !!lp && lp.playbackState !== MprisPlaybackState.Stopped;
+    }
+    opacity: root.hasActiveMedia ? 1 : 0
+    visible: opacity > 0
+    Behavior on opacity {
+        NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
+    }
 
     // Loading / idle / not-found status text
     StyledText {
