@@ -1,0 +1,21 @@
+{
+    "id": "pureLyrics",
+    "name": "Pure Lyrics",
+    "description": "A minimal floating desktop widget that displays synced lyrics from multiple sources. No menus, no bloat - just lyrics.",
+    "version": "1.0.0",
+    "author": "lildengzi",
+    "category": "media",
+    "type": "desktop",
+    "capabilities": ["desktop-widget"],
+    "component": "./PureLyrics.qml",
+    "settings": "./PureLyricsSettings.qml",
+    "icon": "lyrics",
+    "requires_dms": ">=1.2.0",
+    "compositors": ["niri"],
+    "distro": ["any"],
+    "permissions": [
+        "settings_read",
+        "settings_write",
+        "network"
+    ]
+}
