@@ -1086,6 +1086,23 @@ DesktopPluginComponent {
     // Position tracking for synced lyrics
     // -------------------------------------------------------------------------
 
+    // Lyrics timestamps are sorted ascending; binary search keeps the
+    // 100ms poll cheap even for long tracks (O(log n) instead of O(n)).
+    function findLineIndex(pos) {
+        var lines = root.lyricsLines;
+        var lo = 0, hi = lines.length - 1, result = -1;
+        while (lo <= hi) {
+            var mid = (lo + hi) >> 1;
+            if (pos >= lines[mid].time) {
+                result = mid;
+                lo = mid + 1;
+            } else {
+                hi = mid - 1;
+            }
+        }
+        return result;
+    }
+
     Timer {
         id: positionTimer
         interval: 100
@@ -1098,13 +1115,7 @@ DesktopPluginComponent {
                 return;
             var rawPos = lp.position || 0;
             var pos = rawPos + root.scrollOffset / 1000.0;
-            var newIndex = -1;
-            for (var i = lyricsLines.length - 1; i >= 0; i--) {
-                if (pos >= lyricsLines[i].time) {
-                    newIndex = i;
-                    break;
-                }
-            }
+            var newIndex = root.findLineIndex(pos);
             if (newIndex !== currentLineIndex)
                 currentLineIndex = newIndex;
         }
