@@ -1270,7 +1270,7 @@ DesktopPluginComponent {
         }
 
         Behavior on contentY {
-            NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
         }
 
         delegate: Item {
@@ -1308,9 +1308,9 @@ DesktopPluginComponent {
                 opacity: parent.dist > parent.maxDist ? 0 : (parent.isEmptyLine ? 0.25 : (dist === 0 ? 1.0 : dist === 1 ? 0.6 : dist === 2 ? 0.35 : 0.18))
                 color: dist === 0 ? root.accentColor : Theme.surfaceText
 
-                Behavior on opacity { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
-                Behavior on color { ColorAnimation { duration: 200 } }
-                Behavior on font.pixelSize { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                Behavior on opacity { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+                Behavior on color { ColorAnimation { duration: 120 } }
+                Behavior on font.pixelSize { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
             }
         }
     }
