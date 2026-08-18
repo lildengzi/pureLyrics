@@ -330,6 +330,9 @@ DesktopPluginComponent {
 
     readonly property string _cacheDir: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache") || "") + "/dms-plugin-purelyrics"
 
+    // Entries older than this (30 days) are treated as a miss and cleaned up.
+    readonly property int _cacheTtlMs: 30 * 24 * 60 * 60 * 1000
+
     function _cacheFilePath(title, artist) {
         return _cacheDir + "/" + _cacheKey(title, artist) + ".json";
     }
@@ -366,6 +369,14 @@ DesktopPluginComponent {
             return;
         _cacheDirReady = true;
         mkdirProcess.running = true;
+        cleanupCacheProcess.running = true;
+    }
+
+    // Deletes cached lyric files not touched in the last TTL window.
+    Process {
+        id: cleanupCacheProcess
+        command: ["find", root._cacheDir, "-maxdepth", "1", "-type", "f", "-name", "*.json", "-mtime", "+30", "-delete"]
+        running: false
     }
 
     // Cache read using FileView
@@ -425,7 +436,8 @@ DesktopPluginComponent {
         });
         writer.setText(JSON.stringify({
             lines: lines,
-            source: source
+            source: source,
+            savedAt: Date.now()
         }));
     }
 
@@ -513,7 +525,7 @@ DesktopPluginComponent {
                 // Guard: track may have changed while the file read was in progress
                 if (capturedTitle !== root._lastFetchedTrack || capturedArtist !== root._lastFetchedArtist)
                     return;
-                if (cached && cached.lines && cached.lines.length > 0) {
+                if (cached && cached.lines && cached.lines.length > 0 && !(cached.savedAt && (Date.now() - cached.savedAt > root._cacheTtlMs))) {
                     root.lyricsLines = cached.lines;
                     root.lyricStatus = lyricState.synced;
                     root.lyricSource = cached.source > 0 ? cached.source : lyricSrc.cache;
@@ -1316,6 +1328,7 @@ DesktopPluginComponent {
     }
 
     Component.onCompleted: {
+        _ensureCacheDir();
         console.info("[PureLyrics] Desktop widget loaded");
     }
 }
