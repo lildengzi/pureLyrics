@@ -11,7 +11,7 @@
     "settings": "./PureLyricsSettings.qml",
     "icon": "lyrics",
     "requires_dms": ">=1.2.0",
-    "compositors": ["niri"],
+    "compositors": ["any"],
     "distro": ["any"],
     "permissions": [
         "settings_read",

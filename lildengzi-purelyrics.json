@@ -10,10 +10,10 @@
     "description": "A minimal floating desktop widget that displays real-time synced lyrics from multiple sources.",
     "dependencies": [],
     "compositors": [
-        "niri"
+        "any"
     ],
     "distro": [
         "any"
     ],
-    "screenshot": "https://raw.githubusercontent.com/lildengzi/pureLyrics/master/screenshot.png"
+    "screenshot": "https://raw.githubusercontent.com/lildengzi/pureLyrics/main/screenshot.png"
 }
