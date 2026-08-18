@@ -2,6 +2,8 @@
 
 A minimal, floating desktop widget that displays **real-time synced lyrics**. No player UI, no visualizer, no bloat — just lyrics, highly customizable.
 
+![Screenshot](screenshot.png)
+
 ## Features
 
 - **Synced lyrics** from multiple sources with automatic fallback:
