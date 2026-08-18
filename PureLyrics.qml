@@ -249,9 +249,6 @@ DesktopPluginComponent {
     onCurrentTitleChanged: fetchDebounceTimer.restart()
     onCurrentArtistChanged: fetchDebounceTimer.restart()
 
-    // Force-update toggle to poll MPRIS position
-    property bool _forceUpdate: false
-
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
